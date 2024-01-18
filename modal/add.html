@@ -1,0 +1,28 @@
+<!-- FILEPATH: /var/www/html/partielJS/modal/add.html -->
+<!-- BEGIN: ed8c6549bwf9 -->
+<div id="add-modal" class="modal add">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter une recette</h5>
+                <button type="button" class="close" data-dismiss="modal" onclick="closeModal('add-modal')">x</button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="recipe-name">Nom de la recette:</label>
+                        <input type="text" class="form-control" id="recipe-name" name="recipe-name">
+                    </div>
+                    <button type="button" class="btn" id="ingredientBtn" onclick="addIngredient()">Ajouter ingrédient</button>
+                    <button type="button" class="btn btn-primary" id="add-recipe" onclick="addRecipe()" data-dismiss="modal">Ajouter la recette</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- END: ed8c6549bwf9 -->
+

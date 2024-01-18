@@ -1,0 +1,26 @@
+<!-- Modal -->
+<div id="send-modal" class="modal send">
+    <div class="modal-dialog">
+    <!-- Modal content -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Envoyer la commande</h5>
+                <button type="button" class="close" data-dismiss="modal" onclick="closeModal('send-modal',true)">x</button>
+            </div>
+            <div class="modal-body">       
+                <form>
+                    <label for="recipe-name">Recette:</label>
+                    <select id="recipe-name" name="recipe" class="form-control">
+                        <!-- BEGIN: Loop through recettes.recipeName -->
+                        <option></option>
+                        <!-- END: Loop through recettes.recipeName -->
+                    </select>
+                    <br>
+                    <label for="sauce">Sauce:</label>
+                    <input type="text" id="sauce" name="sauce" class="form-control">
+                    <button type="button" class="btn btn-primary" id="add-recipe" onclick="send()" data-dismiss="modal">Envoyer</button>
+                </form>
+            </div> 
+        </div>
+    </div>
+</div>

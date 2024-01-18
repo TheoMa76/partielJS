@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>KebabNWS</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Description de la page">
+    <meta name="keywords" content="HTML, CSS, JavaScript">
+    <meta name="author" content="Theo Maerten">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="public/css/global.css">
+    <!-- UTILISATION DE BOOTSTRAP +2pts-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+<body>
+    <header>
+        <div class="title text-center mx-auto">
+            <h1 class="display-4">Recettes de kebab</h1>
+        </div>
+    </header>
+    <main>
+        <div id="modal-container"></div>
+        <div class="card mx-auto" id="table-recette">
+            <div class="card-body">
+                <div class="row  mx-auto text-center">
+                    <div class="col-md-4">
+                        <button id="send" class="btn btn-primary my-2" onclick="loadModalContent('send-modal')">Envoyer une commande</button>
+                    </div>
+                    <div class="col-md-4">
+                        <button id="add-recipe" class="btn btn-success my-2" onclick="loadModalContent('add-modal')">Nouvelle recette</button>
+                    </div>
+                    <div class="col-md-4">
+                        <button id="show" class="btn btn-warning my-2" onclick="loadModalContent('show-modal')">Voir commandes envoyées</button>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Nom de la recette</th>
+                            <th scope="col">Ingrédients</th>
+                            <th scope="col">En cuisine</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-list">
+                        <!-- la table est généré en JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+
+    </footer>
+    <script>
+        let ingredientCount = 0;
+        let recettes = [];
+        let commandes = [];
+
+        async function loadModalContent(idModal) {
+            let nomModal = idModal.split('-')[0];
+            const response = await fetch('modal/'+nomModal+'.html');
+            const content = await response.text();
+            document.getElementById('modal-container').innerHTML = content;
+            let modal = new bootstrap.Modal(document.getElementById(idModal));
+            if (nomModal === 'send') {
+                populateRecipeOptions();
+            }
+            if (nomModal === 'show') {
+                writeCommandeList();
+            }
+            modal.show();
+        }
+
+        //fonction pour fermer la modal , un peu galère sans JQuery.
+        //on récupère l'id de la modal et on lui enlève la classe show et on la cache.
+        //on enlève la classe modal-open du body et on supprime le backdrop de la modal.
+        //voilà c'est un peu galère mais ça marche.
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            const modalBackdrop = document.querySelector('.modal-backdrop');
+            if (modalBackdrop) {
+                modalBackdrop.remove();
+            }
+        }
+
+
+        function addIngredient() {
+            ingredientCount++;
+
+            let ingredientHTML = '<label for="ingredient">Ingrédient:</label><input type="text" class="form-control" id="ingredient-' + ingredientCount + '" name="ingredient">';
+            
+            let formGroup = document.querySelector('.form-group');
+            formGroup.insertAdjacentHTML('beforeend', ingredientHTML);
+        }
+
+        function getFormData() {
+            const recipeName = document.getElementById('recipe-name').value;
+            const ingredients = [];
+            let recette = null;
+
+            document.querySelectorAll('[name="ingredient"]').forEach((input) => {
+                ingredients.push(input.value);
+            });
+            recette = { recipeName, ingredients };
+            return { recette };
+        }
+
+        function addRecipe() {
+           const formData = getFormData();
+           if(recettes.find((recette) => recette.recipeName === formData.recette.recipeName)){
+               alert('Cette recette existe déjà');
+               return;
+           }
+           recettes.push(formData.recette);
+           writeRecipe();
+           closeModal('add-modal');
+        }
+
+        function writeRecipe(edit = false){
+            let tbody = document.querySelector('#tbody-list');
+            if(!edit){
+                tbody.innerHTML = '';
+            }
+            
+            recettes.forEach((recette) => {
+                if(!edit){
+                    let tr = document.createElement('tr');
+                    let tdName = document.createElement('td');
+                    let tdIngredients = document.createElement('td');
+                    let tdCuisine = document.createElement('td');
+                    let tdActions = document.createElement('td');
+                    let btnDelete = document.createElement('button');
+
+                    tdName.innerText = recette.recipeName;
+                    tdIngredients.innerText = recette.ingredients.join(', ');
+                    if(commandes.includes(recette.recipeName)){
+                        tdCuisine.innerText = 'Oui';
+                    }else{
+                        tdCuisine.innerText = 'Non';
+                    }
+                    btnDelete.innerText = 'Supprimer';
+
+                    btnDelete.classList.add('btn', 'btn-danger', 'mx-1');
+
+                    btnDelete.addEventListener('click', () => {
+                        deleteRecipe(recette.recipeName);
+                    });
+
+                    tdActions.appendChild(btnDelete);
+
+                    tr.id = recette.recipeName;
+
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdIngredients);
+                    tr.appendChild(tdCuisine);
+                    tr.appendChild(tdActions);
+
+                    tbody.appendChild(tr);
+                }else{
+                    let tdEdit = document.getElementById(recette.recipeName);
+
+                    if (tdEdit) {
+                        let tdCuisine = tdEdit.querySelector('td:nth-child(3)');
+                        let tdActions = tdEdit.querySelector('td:nth-child(4)');
+                        let html = "";
+
+                        if (commandes.some(commande => commande.recipeName === recette.recipeName)) {
+                            html = 'Oui';
+                        } else {
+                            html = 'Non';
+                        }
+
+                        if (tdCuisine) {
+                            tdCuisine.textContent = html;
+                        } else {
+                            console.error('Le tdCuisine n\'a pas été trouvé dans la ligne avec l\'id', recette.recipeName);
+                        }
+                    } else {
+                        console.error('La ligne avec l\'id', recette.recipeName, 'n\'a pas été trouvée.');
+                    }
+                }
+            });
+        }
+
+        function deleteRecipe(recipeName, validate = false) {
+            recettes.find((recette, index) => {
+                if (recette.recipeName === recipeName) {
+                    if (commandes.some(commande => commande.recipeName === recette.recipeName)) {
+                        if(!validate){
+                            var confirmation = window.confirm('Cette recette est en cours de préparation. Voulez-vous la supprimer quand même?');
+
+                            if (confirmation) {
+                                commandes.splice(index,1);
+                                recettes.splice(index, 1);
+                                writeRecipe();
+                            } else {
+                                return;
+                            }
+                        }else{
+                            commandes.splice(index,1);
+                            recettes.splice(index, 1);
+                            writeCommandeList();
+                            writeRecipe();      
+                        }
+                    
+                    }else{
+                    recettes.splice(index, 1);
+                    writeRecipe();
+                    }
+                }
+            });
+        }
+
+        function populateRecipeOptions() {
+            var select = document.getElementById("recipe-name");
+
+            // Effacer les options existantes
+            select.innerHTML = "";
+
+            // Ajouter une option vide
+            var emptyOption = document.createElement("option");
+            select.appendChild(emptyOption);
+
+            // Ajouter les options à partir de recettes
+            recettes.forEach(function(recette) {
+                var option = document.createElement("option");
+                option.value = recette.recipeName;
+                option.text = recette.recipeName;
+                select.appendChild(option);
+            });
+        }
+
+        async function send() {
+            const recipeName = document.getElementById('recipe-name').value;
+            const sauce = document.getElementById('sauce').value;
+            const ingredients = recettes.find((recette) => recette.recipeName === recipeName).ingredients;
+            let heure = null;
+
+            try {
+                const response = await fetch('https://worldtimeapi.org/api/timezone/Europe/Paris');
+                const data = await response.json();
+                const apiDatetime = new Date(data.datetime);
+                
+                const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                const formattedDatetime = apiDatetime.toLocaleTimeString('fr-FR', options);
+
+                heure = formattedDatetime;
+
+            } catch (error) {
+                console.error('Erreur lors de la récupération de l\'heure :', error);
+            }
+            const commande = { recipeName, ingredients, sauce, heure };
+            commandes.push(commande);
+            writeRecipe(true);
+            closeModal('send-modal');
+        }
+
+        function writeCommandeList(){
+            commandes.sort((a, b) => {
+                // Convertissez les heures en objets Date pour les comparer
+                const heureA = new Date("1970-01-01T" + a.heure);
+                const heureB = new Date("1970-01-01T" + b.heure);
+
+                // Comparez les heures dans l'ordre inverse
+                return heureA - heureB;
+            });
+            console.log(commandes);
+
+            let tbody = document.querySelector('#show-body');
+            tbody.innerHTML = '';
+            let tr = document.createElement('tr');
+            let tdName = document.createElement('td');
+            let tdIngredients = document.createElement('td');
+            let tdSauce = document.createElement('td');
+            let tdHeure = document.createElement('td');
+            let tdTimer = document.createElement('td');
+            let tdValider = document.createElement('td');
+
+            commandes.forEach((commande) => {
+                tdName.innerText = commande.recipeName;
+
+                tdIngredients.innerText = commande.ingredients.join(', ');
+                tdSauce.innerText = commande.sauce;
+                tdHeure.innerText = commande.heure;
+
+                tdValider.innerHTML = '<button class="btn btn-success" onclick="validerCommande(\'' + commande.recipeName + '\')">Valider</button>';
+
+                tr.id = commande.recipeName;
+
+                tr.appendChild(tdName);
+                tr.appendChild(tdIngredients);
+                tr.appendChild(tdSauce);
+                tr.appendChild(tdHeure);
+                tr.appendChild(tdTimer);
+                tr.appendChild(tdValider);
+
+                tbody.appendChild(tr);
+            })
+        }
+
+        function validerCommande(recipeName) {
+            commandes.find((commande, index) => {
+                if (commande.recipeName === recipeName) {
+                    deleteRecipe(commande.recipeName,true);
+                }
+            });
+        }
+
+
+    </script>
+</body>
+</html>
